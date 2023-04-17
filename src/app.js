@@ -102,25 +102,27 @@ app.post("/messages", async (req, res) => {
     }
 });
 
-app.get("messages", (req, res) => {
+app.get("messages", async (req, res) => {
     const limit = parseInt(req.query.limit);
 
-    if (limit && limit >= 1) {
-        const messages = db.collection("messages").find().sort({ _id: -1 }).limit(limit);
+    if (limit < 1 || isNaN(limit)) {
+        return res.sendStatus(422);
+    };
+
+    try {
+        const messages = db.collection("messages").find({
+            $or: [
+                { to: "Todos" },
+                { to: req.headers.user },
+                { from: req.headers.user },
+                { type: "public" }
+            ]
+        }).sort({ $natural: -1 }).limit(limit).toArray();
+
         res.status(200).send(messages);
-    } else {
-        res.sendStatus(422);
+    } catch (err) {
+        res.status(500).send(err.message);
     }
-
-    const messages = db.collection("messages").find({
-        $or: [
-            { to: "Todos" },
-            { to: req.headers.user },
-            { from: req.headers.user }
-        ]
-    });
-
-    res.status(200).send(messages);
 });
 
 const PORT = 5000;
