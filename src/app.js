@@ -144,6 +144,22 @@ app.post("/status", async (req, res) => {
     res.sendStatus(200);
 });
 
+app.delete("/messages/ID_DA_MENSAGEM", async (req, res) => {
+    const name = req.headers.user;
+    const id = req.params.ID_DA_MENSAGEM;
+
+    const deleted = await db.collection("messages").find({ id }).toArray();
+
+    if (!deleted) {
+        res.sendStatus(404);
+    } else if (deleted.name !== name) {
+        res.sendStatus(401);
+    }
+
+    db.collection("messages").findOneAndDelete({ id });
+});
+
+
 setInterval(async () => {
     try {
         const limit = dayjs().subtract(10, "seconds").valueOf();
