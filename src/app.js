@@ -28,10 +28,9 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 app.post("/participants", async (req, res) => {
-    const { name } = req.body;
 
     const schema = Joi.object({ name: Joi.string().trim().min(1).required() });
-    const validation = schema.validate(name, { abortEarly: false });
+    const validation = schema.validate(req.body, { abortEarly: false });
 
     if (validation.error) {
         const errors = validation.error.details.map((detail) => detail.message);
@@ -41,7 +40,7 @@ app.post("/participants", async (req, res) => {
     try {
 
         const participant = {
-            name,
+            name: req.body.name,
             lastStatus: Date.now()
         }
 
