@@ -41,7 +41,7 @@ app.post("/participants", async (req, res) => {
     try {
 
         const participant = {
-            name: req.body.name.trim(),
+            name: stripHtml(req.body.name).trim(),
             lastStatus: Date.now()
         }
 
@@ -51,7 +51,7 @@ app.post("/participants", async (req, res) => {
         await db.collection("participants").insertOne(participant);
 
         const message = {
-            from: stripHtml(participant.name).trim(),
+            from: participant.name,
             to: "Todos",
             text: "entra na sala...",
             type: "status",
@@ -73,8 +73,10 @@ app.get("/participants", async (req, res) => {
 });
 
 app.post("/messages", async (req, res) => {
-    const { to, text, type } = req.body;
-    const from = req.headers.user;
+    const to = stripHtml(req.body.to).trim();
+    const text = stripHtml(req.body.text).trim();
+    const type = stripHtml(req.body.type).trim();
+    const from = stripHtml(req.headers.user).trim();
 
     const schema = Joi.object({
         to: Joi.string().trim().min(1).required(),
@@ -94,13 +96,7 @@ app.post("/messages", async (req, res) => {
     if (!fromValidation) return res.sendStatus(422);
 
     try {
-        const message = {
-            from: stripHtml(from).trim(),
-            to: stripHtml(to).trim(),
-            text: stripHtml(text).trim(),
-            type: stripHtml(type).trim(),
-            time: stripHtml(dayjs().tz("America/Sao_Paulo").format("HH:mm:ss")).trim()
-        };
+        const message = { from, to, text, type, time: dayjs().tz("America/Sao_Paulo").format("HH:mm:ss") };
         await db.collection("messages").insertOne(message);
         res.sendStatus(201);
 
@@ -146,21 +142,6 @@ app.post("/status", async (req, res) => {
 
     await db.collection("participants").updateOne({ name }, { $set: { lastStatus: Date.now() } });
     res.sendStatus(200);
-});
-
-app.delete("/messages/ID_DA_MENSAGEM", async (req, res) => {
-    const name = req.headers.user;
-    const id = req.params.ID_DA_MENSAGEM;
-
-    const deleted = await db.collection("messages").find({ id }).toArray();
-
-    if (!deleted) {
-        return res.sendStatus(404);
-    } else if (deleted.name !== name) {
-        return res.sendStatus(401);
-    }
-
-    db.collection("messages").findOneAndDelete({ id });
 });
 
 setInterval(async () => {
