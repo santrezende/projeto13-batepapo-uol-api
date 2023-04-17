@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
 import Joi from "joi";
+import { stripHtml } from "string-strip-html";
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.post("/participants", async (req, res) => {
     try {
 
         const participant = {
-            name: req.body.name,
+            name: req.body.name.trim(),
             lastStatus: Date.now()
         }
 
@@ -50,7 +51,7 @@ app.post("/participants", async (req, res) => {
         await db.collection("participants").insertOne(participant);
 
         const message = {
-            from: participant.name,
+            from: stripHtml(participant.name).trim(),
             to: "Todos",
             text: "entra na sala...",
             type: "status",
@@ -93,7 +94,13 @@ app.post("/messages", async (req, res) => {
     if (!fromValidation) return res.sendStatus(422);
 
     try {
-        const message = { from, to, text, type, time: dayjs().tz("America/Sao_Paulo").format("HH:mm:ss") };
+        const message = {
+            from: stripHtml(from).trim(),
+            to: stripHtml(to).trim(),
+            text: stripHtml(text).trim(),
+            type: stripHtml(type).trim(),
+            time: stripHtml(dayjs().tz("America/Sao_Paulo").format("HH:mm:ss")).trim()
+        };
         await db.collection("messages").insertOne(message);
         res.sendStatus(201);
 
