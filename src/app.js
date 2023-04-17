@@ -126,5 +126,46 @@ app.get("/messages", async (req, res) => {
     }
 });
 
+app.post("/status", async (req, res) => {
+    const name = req.headers.user;
+    if (!name) {
+        res.sendStatus(404);
+    }
+
+    const onlineParticipant = await db.collection("participants").findOne({ name });
+    if (!onlineParticipant) {
+        res.sendStatus(404);
+    }
+
+    await db.collection("participants").updateOne({ name }, { $set: { lastStatus: Date.now() } });
+    res.sendStatus(200);
+});
+
+setInterval(async () => {
+    try {
+        const deleted = await db.collection("participants").findOneAndDelete({ lastStatus: { $lt: limit } });
+        const limit = dayjs().subtract(10, "seconds").valueOf();
+
+        if (deleted.value) {
+            const message = {
+                from: deleted.value.name,
+                to: "Todos",
+                text: "sai da sala...",
+                type: "status",
+                time: dayjs().tz("America/Sao_Paulo").format("HH:mm:ss"),
+            };
+
+            await db.collection("participants").updateOne(
+                { name: deleted.value.name },
+                { $set: { lastStatus: Date.now() } }
+            );
+
+            await db.collection("messages").insertOne(message);
+        }
+    } catch (err) {
+        console.log(err.message)
+    }
+}, 15000);
+
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
