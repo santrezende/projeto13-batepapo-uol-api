@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
 import Joi from "joi";
-import { stripHtml } from "string-strip-html";
 
 dotenv.config();
 
@@ -41,7 +40,7 @@ app.post("/participants", async (req, res) => {
     try {
 
         const participant = {
-            name: stripHtml(req.body.name).trim(),
+            name: req.body.name,
             lastStatus: Date.now()
         }
 
@@ -73,10 +72,8 @@ app.get("/participants", async (req, res) => {
 });
 
 app.post("/messages", async (req, res) => {
-    const to = stripHtml(req.body.to).trim();
-    const text = stripHtml(req.body.text).trim();
-    const type = stripHtml(req.body.type).trim();
-    const from = stripHtml(req.headers.user).trim();
+    const { to, text, type } = req.body;
+    const from = req.headers.user;
 
     const schema = Joi.object({
         to: Joi.string().trim().min(1).required(),
@@ -143,22 +140,6 @@ app.post("/status", async (req, res) => {
     await db.collection("participants").updateOne({ name }, { $set: { lastStatus: Date.now() } });
     res.sendStatus(200);
 });
-
-app.delete("/messages/ID_DA_MENSAGEM", async (req, res) => {
-    const name = req.headers.user;
-    const id = req.params.ID_DA_MENSAGEM;
-
-    const deleted = await db.collection("messages").find({ id }).toArray();
-
-    if (!deleted) {
-        res.sendStatus(404);
-    } else if (deleted.name !== name) {
-        res.sendStatus(401);
-    }
-
-    db.collection("messages").findOneAndDelete({ id });
-});
-
 
 setInterval(async () => {
     try {
