@@ -143,8 +143,8 @@ app.post("/status", async (req, res) => {
 
 setInterval(async () => {
     try {
-        const deleted = await db.collection("participants").findOneAndDelete({ lastStatus: { $lt: limit } });
         const limit = dayjs().subtract(10, "seconds").valueOf();
+        const deleted = await db.collection("participants").findOneAndDelete({ lastStatus: { $lt: limit } });
 
         if (deleted.value) {
             const message = {
