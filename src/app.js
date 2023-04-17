@@ -102,15 +102,16 @@ app.post("/messages", async (req, res) => {
     }
 });
 
-app.get("messages", async (req, res) => {
-    const limit = parseInt(req.query.limit);
+app.get("/messages", async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit) : Infinity;
+    console.log(limit);
 
     if (limit < 1 || isNaN(limit)) {
-        return res.sendStatus(422);
-    };
+        return res.status(422).send({ message: "Invalid limit value!" });
+    }
 
     try {
-        const messages = db.collection("messages").find({
+        const messages = await db.collection("messages").find({
             $or: [
                 { to: "Todos" },
                 { to: req.headers.user },
